@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Doctor — MediChain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css"/>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">👨‍⚕️</div>
+      <h1>Medi<span>Chain</span></h1>
+    </div>
+    <div class="sidebar-role">
+      <div class="label">Signed in as</div>
+      <div class="role-name" style="color:var(--accent)">Doctor</div>
+      <div class="user-id" id="sid-docid">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Records</div>
+      <div class="nav-item active" onclick="showPanel('add-record')">
+        <span class="icon">📝</span> Add Record
+      </div>
+      <div class="nav-item" onclick="showPanel('view-records')">
+        <span class="icon">📋</span> View Patient Records
+      </div>
+      <div class="nav-item" onclick="showPanel('lookup')">
+        <span class="icon">🔍</span> Lookup by Record ID
+      </div>
+      <div class="nav-section">Settings</div>
+      <div class="nav-item" onclick="showPanel('config')">
+        <span class="icon">⚙️</span> API Config
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="net-status"><div class="net-dot"></div>localhost:5000</div>
+      <a href="index.html" class="back-link">← Switch role</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ADD RECORD -->
+    <div id="panel-add-record" class="panel active">
+      <div class="topbar">
+        <div>
+          <div style="font-size:18px;font-weight:500">Add Medical Record</div>
+          <div class="sub">Doctor must be authorized by patient first</div>
+        </div>
+        <span class="endpoint-badge">POST /addRecord</span>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Record details</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Your Doctor ID (userId)</label>
+              <input type="text" id="ar-docid" placeholder="Doctor-Rama04" oninput="syncDocId(this.value)"/>
+            </div>
+            <div class="form-group">
+              <label>Patient ID</label>
+              <input type="text" id="ar-patient" placeholder="anuj"/>
+            </div>
+            <div class="form-group span2">
+              <label>Diagnosis</label>
+              <input type="text" id="ar-diagnosis" placeholder="e.g. Common cold, Hypertension Stage 1"/>
+            </div>
+            <div class="form-group span2">
+              <label>Prescription</label>
+              <textarea id="ar-prescription" placeholder="e.g. Paracetamol 500mg twice daily, rest for 3 days, plenty of fluids"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addRecord()">⛓ Submit to blockchain</button>
+          </div>
+          <div class="loader" id="ar-loader"><div class="spinner"></div>Invoking chaincode transaction...</div>
+          <div class="resp-box" id="ar-resp"></div>
+        </div>
+
+        <div class="card" style="background:rgba(0,229,176,0.03);border-color:rgba(0,229,176,0.12)">
+          <div class="card-title" style="color:var(--accent)">Important — access control</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.8;font-family:var(--font-mono)">
+            The chaincode verifies that your <span style="color:var(--cyan)">doctorId</span> is in the patient's<br/>
+            <span style="color:var(--cyan)">authorizedDoctors[]</span> list before allowing a record to be written.<br/>
+            If you get an "unauthorized" error, ask the patient to grant you access first.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW RECORDS -->
+    <div id="panel-view-records" class="panel">
+      <div class="topbar">
+        <div>
+          <div style="font-size:18px;font-weight:500">View Patient Records</div>
+          <div class="sub">All medical records for a patient</div>
+        </div>
+        <span class="endpoint-badge">POST /getAllRecordsByPatientId</span>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Query records</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Your Doctor ID (userId)</label>
+              <input type="text" id="vr-docid" placeholder="Doctor-Rama04"/>
+            </div>
+            <div class="form-group">
+              <label>Patient ID</label>
+              <input type="text" id="vr-patient" placeholder="anuj"/>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="viewRecords()">Fetch records</button>
+          </div>
+          <div class="loader" id="vr-loader"><div class="spinner"></div>Querying blockchain...</div>
+          <div class="resp-box" id="vr-err"></div>
+        </div>
+
+        <div id="vr-results"></div>
+      </div>
+    </div>
+
+    <!-- LOOKUP BY ID -->
+    <div id="panel-lookup" class="panel">
+      <div class="topbar">
+        <div>
+          <div style="font-size:18px;font-weight:500">Lookup Record by ID</div>
+          <div class="sub">Fetch a specific record using its blockchain record ID</div>
+        </div>
+        <span class="endpoint-badge">POST /getRecordById</span>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Record lookup</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Your Doctor ID (userId)</label>
+              <input type="text" id="lu-docid" placeholder="Doctor-Rama04"/>
+            </div>
+            <div class="form-group">
+              <label>Patient ID</label>
+              <input type="text" id="lu-patient" placeholder="anuj"/>
+            </div>
+            <div class="form-group span2">
+              <label>Record ID</label>
+              <input type="text" id="lu-recordid" placeholder="R-bee444be5083b6587e4486b752899d20126d6..."/>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="lookupRecord()">Fetch record</button>
+          </div>
+          <div class="loader" id="lu-loader"><div class="spinner"></div>Querying blockchain...</div>
+          <div class="resp-box" id="lu-resp"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="panel-config" class="panel">
+      <div class="topbar">
+        <div>
+          <div style="font-size:18px;font-weight:500">API Configuration</div>
+          <div class="sub">Backend connection settings</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Backend URL</div>
+          <div class="form-grid cols-1">
+            <div class="form-group">
+              <label>Base URL</label>
+              <input type="text" id="cfg-url" value="http://localhost:5000"/>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveConfig()">Save</button>
+            <button class="btn btn-ghost" onclick="testConnection()">Test connection</button>
+          </div>
+          <div class="resp-box" id="cfg-resp"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = () => (localStorage.getItem('ehr_base_url') || 'http://localhost:5000');
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+function syncDocId(val) {
+  document.getElementById('sid-docid').textContent = val || '—';
+}
+
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'ok' ? '✓ ' : '✗ ') + msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+function showResp(id, data, isErr) {
+  const el = document.getElementById(id);
+  el.className = 'resp-box show ' + (isErr ? 'err' : 'ok');
+  el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+}
+
+function loader(id, show) {
+  document.getElementById(id).className = 'loader' + (show ? ' show' : '');
+}
+
+async function api(path, body) {
+  try {
+    const r = await fetch(BASE() + '/' + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+    return { ok: r.ok, data, status: r.status };
+  } catch(e) {
+    return { ok: false, data: { error: e.message, hint: 'Is your Node SDK server running on port 5000?' }, status: 0 };
+  }
+}
+
+async function addRecord() {
+  const body = {
+    userId:       document.getElementById('ar-docid').value.trim(),
+    patientId:    document.getElementById('ar-patient').value.trim(),
+    diagnosis:    document.getElementById('ar-diagnosis').value.trim(),
+    prescription: document.getElementById('ar-prescription').value.trim(),
+  };
+  if(!body.userId || !body.patientId || !body.diagnosis) {
+    toast('Doctor ID, Patient ID, and Diagnosis are required', 'err'); return;
+  }
+  loader('ar-loader', true);
+  const r = await api('addRecord', body);
+  loader('ar-loader', false);
+  showResp('ar-resp', r.data, !r.ok);
+  toast(r.ok ? 'Record added to blockchain' : 'Failed to add record', r.ok ? 'ok' : 'err');
+}
+
+async function viewRecords() {
+  const docid   = document.getElementById('vr-docid').value.trim();
+  const patient = document.getElementById('vr-patient').value.trim();
+  if(!docid || !patient) { toast('Both fields required', 'err'); return; }
+  loader('vr-loader', true);
+  document.getElementById('vr-err').className = 'resp-box';
+  document.getElementById('vr-results').innerHTML = '';
+
+  const r = await api('getAllRecordsByPatientId', { userId: docid, patientId: patient });
+  loader('vr-loader', false);
+
+  if(!r.ok) { showResp('vr-err', r.data, true); toast('Query failed', 'err'); return; }
+
+  let rows = [];
+  try {
+    const raw = r.data.data || r.data;
+    if(typeof raw === 'string') {
+      // might be double-encoded
+      try { rows = JSON.parse(raw); } catch { rows = []; }
+    } else {
+      rows = Array.isArray(raw) ? raw : [raw];
+    }
+  } catch { rows = []; }
+
+  if(!rows.length) {
+    document.getElementById('vr-results').innerHTML = '<div class="empty-state"><div class="icon">📭</div>No records found for this patient</div>';
+    toast('No records found');
+    return;
+  }
+
+  document.getElementById('vr-results').innerHTML =
+    `<div style="font-size:12px;font-family:var(--font-mono);color:var(--muted);margin-bottom:12px">${rows.length} record${rows.length>1?'s':''} found</div>` +
+    '<div class="records-grid">' +
+    rows.map(rec => `
+      <div class="record-card">
+        <div class="rec-id">${rec.recordId || '—'}</div>
+        <div class="rec-diagnosis">${rec.diagnosis || 'No diagnosis recorded'}</div>
+        <div class="rec-rx">${rec.prescription ? '💊 ' + rec.prescription : ''}</div>
+        <div class="rec-meta">
+          <span class="doc">👨‍⚕️ ${rec.doctorId || '—'}</span>
+          <span>🕐 ${rec.timestamp ? new Date(rec.timestamp).toLocaleString() : '—'}</span>
+          <span>🧑 ${rec.patientId || patient}</span>
+        </div>
+      </div>
+    `).join('') + '</div>';
+  toast(`Loaded ${rows.length} records`);
+}
+
+async function lookupRecord() {
+  const body = {
+    userId:   document.getElementById('lu-docid').value.trim(),
+    patientId: document.getElementById('lu-patient').value.trim(),
+    recordId:  document.getElementById('lu-recordid').value.trim(),
+  };
+  if(!body.userId || !body.patientId || !body.recordId) { toast('All fields required', 'err'); return; }
+  loader('lu-loader', true);
+  const r = await api('getRecordById', body);
+  loader('lu-loader', false);
+  showResp('lu-resp', r.data, !r.ok);
+  toast(r.ok ? 'Record fetched' : 'Record not found', r.ok ? 'ok' : 'err');
+}
+
+function saveConfig() {
+  localStorage.setItem('ehr_base_url', document.getElementById('cfg-url').value.trim());
+  toast('Config saved');
+}
+
+async function testConnection() {
+  try {
+    const r = await fetch(BASE() + '/status');
+    const t = await r.text();
+    showResp('cfg-resp', t, !r.ok);
+    toast(r.ok ? 'Server is reachable' : 'Server error', r.ok ? 'ok' : 'err');
+  } catch(e) {
+    showResp('cfg-resp', { error: e.message }, true);
+    toast('Cannot reach server', 'err');
+  }
+}
+
+document.getElementById('cfg-url').value = BASE();
+</script>
+</body>
+</html>
