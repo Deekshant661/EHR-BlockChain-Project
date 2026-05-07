@@ -299,6 +299,416 @@
 				"description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
 			},
 			"response": []
+		},
+		{
+			"name": "getPatientById",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"anuj\",\n    \"patientId\": \"anuj\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/getPatientById",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"getPatientById"
+					]
+				},
+				"description": "Fetch a single patient's details by patientId.\nAllowed callers: patient (own record), authorized doctor, hospital, insurance roles.\n- userId    : wallet identity of the caller\n- patientId : patient to look up"
+			},
+			"response": []
+		},
+		{
+			"name": "getAllPatients",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"Hospital01\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/getAllPatients",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"getAllPatients"
+					]
+				},
+				"description": "Fetch all registered patients. Hospital staff only.\n- userId : must be a wallet identity with role='hospital'"
+			},
+			"response": []
+		},
+		{
+			"name": "getRecordsByDoctor",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"Doctor-Rama04\",\n    \"doctorId\": \"Doctor-Rama04\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/getRecordsByDoctor",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"getRecordsByDoctor"
+					]
+				},
+				"description": "Fetch all records written by a specific doctor across all patients.\nAllowed callers: that doctor themselves, or hospital staff.\n- userId   : wallet identity of the caller\n- doctorId : doctor whose records to retrieve"
+			},
+			"response": []
+		},
+		{
+			"name": "revokeAccess",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"anuj\",\n    \"patientId\": \"anuj\",\n    \"doctorIdToRevoke\": \"Doctor-Rama04\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/revokeAccess",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"revokeAccess"
+					]
+				},
+				"description": "Patient revokes a doctor's access to their records. Caller must be the patient (userId == patientId).\n- userId           : patient's wallet identity\n- patientId        : must match userId\n- doctorIdToRevoke : doctor wallet ID to remove"
+			},
+			"response": []
+		},
+		{
+			"name": "issueInsurance",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"Agent-Raj01\",\n    \"patientId\": \"anuj\",\n    \"coverageAmount\": 500000,\n    \"policyType\": \"health\",\n    \"validFrom\": \"2025-01-01\",\n    \"validTo\": \"2026-01-01\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/issueInsurance",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"issueInsurance"
+					]
+				},
+				"description": "Insurance agent issues a new policy for a patient.\nCaller must have role='insuranceAgent' or role='insuranceAdmin'.\n- userId          : agent's wallet identity\n- patientId       : patient receiving the policy\n- coverageAmount  : coverage value e.g. 500000\n- policyType      : e.g. 'health', 'critical-illness'\n- validFrom       : ISO date string e.g. '2025-01-01'\n- validTo         : ISO date string e.g. '2026-01-01'"
+			},
+			"response": []
+		},
+		{
+			"name": "getPoliciesByPatient",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"anuj\",\n    \"patientId\": \"anuj\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/getPoliciesByPatient",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"getPoliciesByPatient"
+					]
+				},
+				"description": "Get all insurance policies held by a patient.\nAllowed callers: patient (own), insuranceAgent, insuranceAdmin, hospital.\n- userId    : wallet identity of the caller\n- patientId : patient whose policies to list"
+			},
+			"response": []
+		},
+		{
+			"name": "createClaim",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"anuj\",\n    \"patientId\": \"anuj\",\n    \"policyId\": \"POL-<txId>\",\n    \"recordId\": \"R-<txId>\",\n    \"claimAmount\": 25000,\n    \"description\": \"Hospitalisation for flu treatment - 3 days\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/createClaim",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"createClaim"
+					]
+				},
+				"description": "Patient or authorized doctor files a claim against an active policy.\n- userId      : patient's or doctor's wallet identity\n- patientId   : patient the claim is for\n- policyId    : active policy ID returned by issueInsurance (format: POL-<txId>)\n- recordId    : (optional) medical record this claim is based on (format: R-<txId>)\n- claimAmount : amount being claimed\n- description : reason for the claim"
+			},
+			"response": []
+		},
+		{
+			"name": "getClaimInfo",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"anuj\",\n    \"patientId\": \"anuj\",\n    \"claimId\": \"CLM-<txId>\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/getClaimInfo",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"getClaimInfo"
+					]
+				},
+				"description": "Fetch details of a single claim.\nAllowed callers: patient (own), authorized doctor, insuranceAgent, insuranceAdmin, hospital.\n- userId    : wallet identity of the caller\n- patientId : patient the claim belongs to\n- claimId   : claim ID returned by createClaim (format: CLM-<txId>)"
+			},
+			"response": []
+		},
+		{
+			"name": "getAllClaimsByPatient",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"anuj\",\n    \"patientId\": \"anuj\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/getAllClaimsByPatient",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"getAllClaimsByPatient"
+					]
+				},
+				"description": "Fetch all claims filed for a given patient.\nAllowed callers: patient (own), authorized doctor, insuranceAgent, insuranceAdmin, hospital.\n- userId    : wallet identity of the caller\n- patientId : patient whose claims to list"
+			},
+			"response": []
+		},
+		{
+			"name": "approveClaim",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userId\": \"Agent-Raj01\",\n    \"patientId\": \"anuj\",\n    \"claimId\": \"CLM-<txId>\",\n    \"decision\": \"APPROVED\",\n    \"reason\": \"All documents verified. Claim is valid.\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/approveClaim",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"approveClaim"
+					]
+				},
+				"description": "Insurance agent approves or rejects a PENDING claim.\nCaller must have role='insuranceAgent' or role='insuranceAdmin'.\n- userId    : agent's wallet identity\n- patientId : patient the claim belongs to\n- claimId   : claim ID (format: CLM-<txId>)\n- decision  : 'APPROVED' or 'REJECTED'\n- reason    : (optional) explanation — recommended for rejections"
+			},
+			"response": []
 		}
 	],
 	"event": [

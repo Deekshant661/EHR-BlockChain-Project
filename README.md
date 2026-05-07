@@ -53,7 +53,7 @@ $ ssh-add ~/ssh/github -->
 
 ### onboard script
     
-    $ node cert-script/onboardHospital01.js 
+    $ node cert-script/registerOrg2Admin.js
     $ node cert-script/onboardDoctor.js
 
     $ node cert-script/onboardInsuranceCompany.js 
