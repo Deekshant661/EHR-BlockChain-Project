@@ -11,6 +11,7 @@ const { bootstrapAdmins }    = require('./services/adminBootstrap');
 const authRoutes             = require('./routes/authRoutes');
 const userRoutes             = require('./routes/userRoutes');
 const ehrRoutes              = require('./routes/ehrRoutes');
+const fileRoutes             = require('./routes/fileRoutes');
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
 // ─── Express App ─────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ app.get('/status', (req, res) => {
 app.use('/api/auth',  authRoutes);   // POST /api/auth/signup, /api/auth/login
 app.use('/api/users', userRoutes);   // POST /api/users/enroll (legacy/direct)
 app.use('/api/ehr',   ehrRoutes);    // POST /api/ehr/<chaincode-function> (JWT protected)
+app.use('/api/files', fileRoutes);   // POST /api/files/upload, /api/files/getByPatient (JWT + RBAC)
 
 // ─── Global Error Handler (must be registered last) ──────────────────────────
 app.use(globalErrorHandler);
@@ -44,7 +46,8 @@ bootstrapAdmins()
             console.log(`   Health:  GET  http://localhost:${PORT}/status`);
             console.log(`   Signup:  POST http://localhost:${PORT}/api/auth/signup`);
             console.log(`   Login:   POST http://localhost:${PORT}/api/auth/login`);
-            console.log(`   EHR API: POST http://localhost:${PORT}/api/ehr/<function> (JWT required)\n`);
+            console.log(`   EHR API: POST http://localhost:${PORT}/api/ehr/<function> (JWT required)`);
+            console.log(`   Files:   POST http://localhost:${PORT}/api/files/upload (JWT + RBAC)\n`);
         });
     })
     .catch((err) => {

@@ -58,6 +58,24 @@ const initDatabase = () => {
     // This only affects users where isVerified is NULL (before migration).
     db.exec(`UPDATE users SET isVerified = 1 WHERE isVerified IS NULL`);
 
+    // ── Medical Files Table ─────────────────────────────────────────────────
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS medical_files (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            patientUUID         TEXT    NOT NULL,
+            uploadedBy          TEXT    NOT NULL,
+            uploaderRole        TEXT    NOT NULL,
+            originalFileName    TEXT    NOT NULL,
+            mimeType            TEXT    NOT NULL,
+            fileSize            INTEGER NOT NULL,
+            ipfsCid             TEXT    NOT NULL,
+            encryptionIv        TEXT    NOT NULL,
+            encryptionAlgorithm TEXT    NOT NULL DEFAULT 'aes-256-gcm',
+            authTag             TEXT,
+            uploadTimestamp     DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+
     console.log('[Database] SQLite initialized at', DB_PATH);
     return db;
 };
@@ -133,6 +151,41 @@ const clearExpiredOtp = (email) => {
     return stmt.run(email);
 };
 
+// ─── Medical File Helpers ────────────────────────────────────────────────────
+
+/**
+ * Insert a medical file metadata record.
+ * @param {Object} file
+ * @returns {Object} { lastInsertRowid }
+ */
+const insertFile = ({ patientUUID, uploadedBy, uploaderRole, originalFileName, mimeType, fileSize, ipfsCid, encryptionIv, encryptionAlgorithm, authTag }) => {
+    const stmt = db.prepare(`
+        INSERT INTO medical_files (patientUUID, uploadedBy, uploaderRole, originalFileName, mimeType, fileSize, ipfsCid, encryptionIv, encryptionAlgorithm, authTag)
+        VALUES (@patientUUID, @uploadedBy, @uploaderRole, @originalFileName, @mimeType, @fileSize, @ipfsCid, @encryptionIv, @encryptionAlgorithm, @authTag)
+    `);
+    return stmt.run({ patientUUID, uploadedBy, uploaderRole, originalFileName, mimeType, fileSize, ipfsCid, encryptionIv, encryptionAlgorithm, authTag });
+};
+
+/**
+ * Get all medical files for a patient.
+ * @param {string} patientUUID
+ * @returns {Array} File metadata rows
+ */
+const getFilesByPatient = (patientUUID) => {
+    const stmt = db.prepare('SELECT * FROM medical_files WHERE patientUUID = ? ORDER BY uploadTimestamp DESC');
+    return stmt.all(patientUUID);
+};
+
+/**
+ * Get a single file by ID.
+ * @param {number} fileId
+ * @returns {Object|undefined}
+ */
+const getFileById = (fileId) => {
+    const stmt = db.prepare('SELECT * FROM medical_files WHERE id = ?');
+    return stmt.get(fileId);
+};
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 module.exports = {
     initDatabase,
@@ -142,4 +195,7 @@ module.exports = {
     updateVerification,
     setVerified,
     clearExpiredOtp,
+    insertFile,
+    getFilesByPatient,
+    getFileById,
 };

@@ -4,6 +4,7 @@ import { ehrAPI } from '../services/api';
 import DashboardLayout from '../layouts/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
+import FileUpload from '../components/FileUpload';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -123,6 +124,20 @@ export default function PatientDashboard() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Upload Files Section */}
+      {section === 'upload' && (
+        <div className="max-w-2xl">
+          <h3 className="section-title">Upload Medical Documents</h3>
+          <div className="card">
+            <FileUpload
+              patientUUID={patientUuid}
+              patientEditable={false}
+              onUploadSuccess={() => setToast({ type: 'success', message: 'File encrypted & uploaded to IPFS!' })}
+            />
+          </div>
         </div>
       )}
 

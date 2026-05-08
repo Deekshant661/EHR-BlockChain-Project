@@ -13,12 +13,14 @@ const ROLE_LABELS = {
 const NAV_ITEMS = {
   patient: [
     { label: 'My Records', icon: '📋', section: 'records' },
+    { label: 'Upload Files', icon: '📤', section: 'upload' },
     { label: 'Access Control', icon: '🔐', section: 'access' },
     { label: 'Insurance', icon: '🛡️', section: 'insurance' },
   ],
   doctor: [
     { label: 'Patients', icon: '👥', section: 'patients' },
     { label: 'Add Record', icon: '➕', section: 'addRecord' },
+    { label: 'Upload Files', icon: '📤', section: 'upload' },
     { label: 'My Records', icon: '📋', section: 'myRecords' },
     { label: 'History', icon: '🔍', section: 'history' },
   ],
