@@ -1,7 +1,7 @@
 {
   "name": "server-node-sdk",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
@@ -10,14 +10,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "EHR Blockchain Server — Hyperledger Fabric Node.js SDK middleware",
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^11.7.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
-    "express": "^5.1.0",
+    "express": "^4.21.0",
     "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
-    "googleapis": "^171.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.1",
     "nodemon": "^3.1.9"
   }
 }
