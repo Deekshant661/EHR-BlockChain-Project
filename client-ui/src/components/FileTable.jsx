@@ -15,16 +15,29 @@ export default function FileTable({ patientUUID, refreshTrigger = 0 }) {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(null); // fileId currently downloading
   const [toast, setToast] = useState(null);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [accessError, setAccessError] = useState('');
 
   const fetchFiles = useCallback(async () => {
     if (!patientUUID) return;
     setLoading(true);
+    setAccessDenied(false);
+    setAccessError('');
     try {
       const res = await fileAPI.getByPatient({ patientUUID });
       setFiles(Array.isArray(res.data.data) ? res.data.data : []);
     } catch (err) {
-      setToast({ type: 'error', message: err.response?.data?.message || 'Failed to load files.' });
-      setFiles([]);
+      const status = err.response?.status;
+      const message = err.response?.data?.message || 'Failed to load files.';
+      if (status === 403) {
+        // Consent denied — patient has not authorized this doctor
+        setAccessDenied(true);
+        setAccessError(message);
+        setFiles([]);
+      } else {
+        setToast({ type: 'error', message });
+        setFiles([]);
+      }
     } finally { setLoading(false); }
   }, [patientUUID]);
 
@@ -87,6 +100,20 @@ export default function FileTable({ patientUUID, refreshTrigger = 0 }) {
     return (
       <div className="card text-center py-8">
         <p className="text-white/30 text-sm">Enter a Patient UUID to view files.</p>
+      </div>
+    );
+  }
+
+  // ── Access Denied UI ───────────────────────────────────────────────────
+  if (accessDenied) {
+    return (
+      <div className="card text-center py-10 space-y-3">
+        <span className="text-4xl">🚫</span>
+        <p className="text-red-400 font-semibold text-sm">{accessError}</p>
+        <p className="text-white/30 text-xs">The patient must grant you access via their dashboard before you can view their files.</p>
+        <button onClick={fetchFiles} className="btn-secondary text-xs mt-2">
+          Retry
+        </button>
       </div>
     );
   }

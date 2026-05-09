@@ -5,6 +5,7 @@ const { decryptFile } = require('../services/encryptionService');
 const { uploadToIPFS, fetchFromIPFS } = require('../services/ipfsService');
 const { insertFile, getFilesByPatient, getFileById } = require('../db/database');
 const { sendSuccess, sendError } = require('../middleware/responseFormatter');
+const { checkDoctorConsent } = require('../services/accessControlService');
 
 // ─── Allowed MIME Types ──────────────────────────────────────────────────────
 const ALLOWED_MIME_TYPES = [
@@ -113,9 +114,9 @@ const upload = async (req, res, next) => {
  * Returns all medical file metadata for a given patient.
  * Body: { patientUUID }
  *
- * Ownership:
- *   - Patients can only view their own files
- *   - Doctors can view any patient's files (consent check in Phase 3)
+ * Authorization (Phase 3):
+ *   - Patient: can only list own files (no blockchain call)
+ *   - Doctor: must have blockchain consent from patient
  */
 const getByPatient = async (req, res, next) => {
     try {
@@ -124,9 +125,18 @@ const getByPatient = async (req, res, next) => {
             return sendError(res, 'patientUUID is required.', 400);
         }
 
-        // Patient ownership enforcement
+        // ── Patient ownership enforcement ────────────────────────────────────
         if (req.user.role === 'patient' && patientUUID !== req.user.uuid) {
             return sendError(res, 'Patients can only view their own files.', 403);
+        }
+
+        // ── Doctor blockchain consent validation ─────────────────────────────
+        // Identity comes ONLY from req.user (JWT verified), never from body
+        if (req.user.role === 'doctor') {
+            const consent = await checkDoctorConsent(req.user.userId, patientUUID);
+            if (!consent.allowed) {
+                return sendError(res, consent.reason, 403);
+            }
         }
 
         const files = getFilesByPatient(patientUUID);
@@ -158,26 +168,47 @@ const TRUSTED_MIME_TYPES = new Set([
 ]);
 
 /**
- * Validate file access ownership.
+ * Centralized file access authorization layer.
  *
- * Isolated into its own function so Phase 3 consent logic can be
- * injected here without refactoring encryption or IPFS code.
+ * This is the SINGLE policy enforcement point for all file access.
+ * All authorization logic (RBAC, ownership, blockchain consent) is
+ * consolidated here for auditability and future extensibility.
  *
- * Phase 2 rules:
- *   - patient: can only access own files
- *   - doctor: can access any patient file
+ * Internal flow (STRICT ORDER):
+ *   Step 1: Patient ownership check (no blockchain call)
+ *   Step 2: Doctor role → blockchain consent validation
+ *   Step 3: Fail closed on any error/timeout
+ *
+ * Security:
+ *   - FAIL CLOSED: uncertain state → deny
+ *   - Doctor identity from req.user ONLY (JWT verified)
+ *   - Never exposes raw Fabric/chaincode errors
+ *   - Consent check happens BEFORE IPFS fetch / AES decryption
  *
  * @param {Object} file – File metadata row from SQLite
  * @param {Object} user – Decoded JWT payload (req.user)
- * @returns {{ allowed: boolean, reason?: string }}
+ * @returns {Promise<{ allowed: boolean, reason?: string }>}
  */
-const validateFileAccess = (file, user) => {
-    // Patient ownership enforcement
-    if (user.role === 'patient' && file.patientUUID !== user.uuid) {
-        return { allowed: false, reason: 'You can only download your own files.' };
+const validateFileAccess = async (file, user) => {
+    // ── Step 1: Patient ownership check ──────────────────────────────────
+    if (user.role === 'patient') {
+        if (file.patientUUID === user.uuid) {
+            // Patient accessing own file — allowed without blockchain call
+            return { allowed: true };
+        }
+        // Patient trying to access another patient's file
+        return { allowed: false, reason: 'You can only access your own files.' };
     }
-    // Doctor: allowed in Phase 2 (consent check deferred to Phase 3)
-    return { allowed: true };
+
+    // ── Step 2: Doctor → blockchain consent validation ────────────────────
+    if (user.role === 'doctor') {
+        // Identity comes ONLY from JWT-verified req.user — never from body/params
+        const consent = await checkDoctorConsent(user.userId, file.patientUUID);
+        return consent;
+    }
+
+    // ── Default: deny any other role ─────────────────────────────────────
+    return { allowed: false, reason: 'Access denied.' };
 };
 
 /**
@@ -186,10 +217,10 @@ const validateFileAccess = (file, user) => {
  * Secure file download pipeline.
  *
  * Validation order (STRICT):
- *   1. JWT verified         (verifyToken middleware)
- *   2. RBAC validated       (requireRole middleware)
+ *   1. JWT verified              (verifyToken middleware)
+ *   2. RBAC validated            (requireRole middleware)
  *   3. Fetch SQLite metadata
- *   4. Ownership validation
+ *   4. Consent/ownership validation (blockchain for doctors)
  *   5. Fetch encrypted content from IPFS
  *   6. AES-256-GCM decrypt in memory
  *   7. Stream decrypted file with secure headers
@@ -199,6 +230,7 @@ const validateFileAccess = (file, user) => {
  *   - Content-Disposition: attachment
  *   - Content-Type from stored mimeType (not inferred)
  *   - No plaintext written to disk
+ *   - Consent validated BEFORE IPFS fetch
  */
 const download = async (req, res, next) => {
     try {
@@ -213,8 +245,9 @@ const download = async (req, res, next) => {
             return sendError(res, 'File not found.', 404);
         }
 
-        // ── Step 4: Ownership / access validation ────────────────────────────
-        const access = validateFileAccess(file, req.user);
+        // ── Step 4: Consent / ownership validation ───────────────────────────
+        // For doctors: queries blockchain BEFORE any IPFS fetch or decryption
+        const access = await validateFileAccess(file, req.user);
         if (!access.allowed) {
             return sendError(res, access.reason, 403);
         }
