@@ -77,4 +77,42 @@ const uploadToIPFS = async (encryptedBuffer, fileName) => {
     }
 };
 
-module.exports = { uploadToIPFS };
+// ─── Pinata IPFS Gateway ─────────────────────────────────────────────────────
+const PINATA_GATEWAY_URL = 'https://gateway.pinata.cloud/ipfs';
+
+/**
+ * Fetch an encrypted file from IPFS via the Pinata gateway.
+ *
+ * @param {string} cid – IPFS content identifier
+ * @returns {Buffer} Encrypted file buffer
+ */
+const fetchFromIPFS = async (cid) => {
+    if (!cid) {
+        throw Object.assign(
+            new Error('CID is required to fetch from IPFS.'),
+            { statusCode: 400 }
+        );
+    }
+
+    try {
+        const response = await axios.get(`${PINATA_GATEWAY_URL}/${cid}`, {
+            responseType: 'arraybuffer',
+            timeout: 60000, // 60 second timeout
+        });
+
+        console.log(`[IPFS] Fetched encrypted file. CID: ${cid} (${response.data.byteLength} bytes)`);
+        return Buffer.from(response.data);
+    } catch (err) {
+        const status = err.response?.status;
+        const msg = status === 404
+            ? 'File not found on IPFS. It may have been unpinned.'
+            : `IPFS retrieval failed: ${err.message}`;
+        console.error(`[IPFS] Fetch failed for CID ${cid}:`, msg);
+        throw Object.assign(
+            new Error(msg),
+            { statusCode: status === 404 ? 404 : 502 }
+        );
+    }
+};
+
+module.exports = { uploadToIPFS, fetchFromIPFS };

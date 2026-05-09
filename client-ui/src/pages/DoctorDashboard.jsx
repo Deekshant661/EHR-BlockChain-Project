@@ -5,6 +5,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import FileUpload from '../components/FileUpload';
+import FileTable from '../components/FileTable';
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export default function DoctorDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [addForm, setAddForm] = useState({ patientId: '', diagnosis: '', prescription: '' });
   const [historyRecordId, setHistoryRecordId] = useState('');
+  const [fileRefresh, setFileRefresh] = useState(0);
+  const [fileSearchUUID, setFileSearchUUID] = useState('');
 
   const doctorUuid = user?.uuid;
 
@@ -172,9 +175,27 @@ export default function DoctorDashboard() {
             <FileUpload
               patientUUID=""
               patientEditable={true}
-              onUploadSuccess={() => setToast({ type: 'success', message: 'File encrypted & uploaded to IPFS!' })}
+              onUploadSuccess={() => { setToast({ type: 'success', message: 'File encrypted & uploaded to IPFS!' }); setFileRefresh((n) => n + 1); }}
             />
           </div>
+        </div>
+      )}
+
+      {/* Patient Files Section */}
+      {section === 'patientFiles' && (
+        <div>
+          <h3 className="section-title">Patient Medical Files</h3>
+          <div className="card mb-4">
+            <form onSubmit={(e) => { e.preventDefault(); }} className="flex gap-3">
+              <input
+                className="input-field flex-1"
+                placeholder="Enter patient blockchain UUID to view files..."
+                value={fileSearchUUID}
+                onChange={(e) => setFileSearchUUID(e.target.value)}
+              />
+            </form>
+          </div>
+          <FileTable patientUUID={fileSearchUUID} refreshTrigger={fileRefresh} />
         </div>
       )}
 

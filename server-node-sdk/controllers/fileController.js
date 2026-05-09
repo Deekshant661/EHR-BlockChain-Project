@@ -1,8 +1,9 @@
 'use strict';
 
 const { encryptFile } = require('../services/encryptionService');
-const { uploadToIPFS } = require('../services/ipfsService');
-const { insertFile, getFilesByPatient } = require('../db/database');
+const { decryptFile } = require('../services/encryptionService');
+const { uploadToIPFS, fetchFromIPFS } = require('../services/ipfsService');
+const { insertFile, getFilesByPatient, getFileById } = require('../db/database');
 const { sendSuccess, sendError } = require('../middleware/responseFormatter');
 
 // ─── Allowed MIME Types ──────────────────────────────────────────────────────
@@ -148,4 +149,104 @@ const getByPatient = async (req, res, next) => {
     }
 };
 
-module.exports = { upload, getByPatient };
+// ─── Trusted MIME Types ──────────────────────────────────────────────────────
+const TRUSTED_MIME_TYPES = new Set([
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+]);
+
+/**
+ * Validate file access ownership.
+ *
+ * Isolated into its own function so Phase 3 consent logic can be
+ * injected here without refactoring encryption or IPFS code.
+ *
+ * Phase 2 rules:
+ *   - patient: can only access own files
+ *   - doctor: can access any patient file
+ *
+ * @param {Object} file – File metadata row from SQLite
+ * @param {Object} user – Decoded JWT payload (req.user)
+ * @returns {{ allowed: boolean, reason?: string }}
+ */
+const validateFileAccess = (file, user) => {
+    // Patient ownership enforcement
+    if (user.role === 'patient' && file.patientUUID !== user.uuid) {
+        return { allowed: false, reason: 'You can only download your own files.' };
+    }
+    // Doctor: allowed in Phase 2 (consent check deferred to Phase 3)
+    return { allowed: true };
+};
+
+/**
+ * GET /api/files/download/:fileId
+ *
+ * Secure file download pipeline.
+ *
+ * Validation order (STRICT):
+ *   1. JWT verified         (verifyToken middleware)
+ *   2. RBAC validated       (requireRole middleware)
+ *   3. Fetch SQLite metadata
+ *   4. Ownership validation
+ *   5. Fetch encrypted content from IPFS
+ *   6. AES-256-GCM decrypt in memory
+ *   7. Stream decrypted file with secure headers
+ *
+ * Security:
+ *   - X-Content-Type-Options: nosniff
+ *   - Content-Disposition: attachment
+ *   - Content-Type from stored mimeType (not inferred)
+ *   - No plaintext written to disk
+ */
+const download = async (req, res, next) => {
+    try {
+        const fileId = parseInt(req.params.fileId, 10);
+        if (isNaN(fileId)) {
+            return sendError(res, 'Invalid file ID.', 400);
+        }
+
+        // ── Step 3: Fetch metadata from SQLite ───────────────────────────────
+        const file = getFileById(fileId);
+        if (!file) {
+            return sendError(res, 'File not found.', 404);
+        }
+
+        // ── Step 4: Ownership / access validation ────────────────────────────
+        const access = validateFileAccess(file, req.user);
+        if (!access.allowed) {
+            return sendError(res, access.reason, 403);
+        }
+
+        // ── Step 5: Fetch encrypted content from IPFS ────────────────────────
+        console.log(`[File] Fetching encrypted file from IPFS. CID: ${file.ipfsCid}`);
+        const encryptedBuffer = await fetchFromIPFS(file.ipfsCid);
+
+        // ── Step 6: AES-256-GCM decrypt in memory ────────────────────────────
+        console.log(`[File] Decrypting "${file.originalFileName}" (${encryptedBuffer.length} bytes)...`);
+        const decryptedBuffer = decryptFile(encryptedBuffer, file.encryptionIv, file.authTag);
+
+        // ── Step 7: Stream decrypted file with secure headers ────────────────
+        // Use stored mimeType — do NOT infer from content
+        const contentType = TRUSTED_MIME_TYPES.has(file.mimeType)
+            ? file.mimeType
+            : 'application/octet-stream';
+
+        res.set({
+            'Content-Type': contentType,
+            'Content-Disposition': `attachment; filename="${file.originalFileName}"`,
+            'Content-Length': decryptedBuffer.length,
+            'X-Content-Type-Options': 'nosniff',
+            'Cache-Control': 'no-store',
+        });
+
+        console.log(`[File] Download complete. fileId=${fileId}, ${decryptedBuffer.length} bytes sent.`);
+        return res.send(decryptedBuffer);
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { upload, getByPatient, download };

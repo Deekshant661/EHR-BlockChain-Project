@@ -5,6 +5,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import FileUpload from '../components/FileUpload';
+import FileTable from '../components/FileTable';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function PatientDashboard() {
   const [grantForm, setGrantForm] = useState({ doctorId: '' });
   const [revokeForm, setRevokeForm] = useState({ doctorId: '' });
   const [claimForm, setClaimForm] = useState({ policyId: '', recordId: '', claimAmount: '', description: '' });
+  const [fileRefresh, setFileRefresh] = useState(0);
 
   const patientUuid = user?.uuid;
 
@@ -135,9 +137,17 @@ export default function PatientDashboard() {
             <FileUpload
               patientUUID={patientUuid}
               patientEditable={false}
-              onUploadSuccess={() => setToast({ type: 'success', message: 'File encrypted & uploaded to IPFS!' })}
+              onUploadSuccess={() => { setToast({ type: 'success', message: 'File encrypted & uploaded to IPFS!' }); setFileRefresh((n) => n + 1); }}
             />
           </div>
+        </div>
+      )}
+
+      {/* My Files Section */}
+      {section === 'myFiles' && (
+        <div>
+          <h3 className="section-title">My Medical Files</h3>
+          <FileTable patientUUID={patientUuid} refreshTrigger={fileRefresh} />
         </div>
       )}
 

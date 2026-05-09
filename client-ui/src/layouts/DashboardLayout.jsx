@@ -14,6 +14,7 @@ const NAV_ITEMS = {
   patient: [
     { label: 'My Records', icon: '📋', section: 'records' },
     { label: 'Upload Files', icon: '📤', section: 'upload' },
+    { label: 'My Files', icon: '📁', section: 'myFiles' },
     { label: 'Access Control', icon: '🔐', section: 'access' },
     { label: 'Insurance', icon: '🛡️', section: 'insurance' },
   ],
@@ -21,6 +22,7 @@ const NAV_ITEMS = {
     { label: 'Patients', icon: '👥', section: 'patients' },
     { label: 'Add Record', icon: '➕', section: 'addRecord' },
     { label: 'Upload Files', icon: '📤', section: 'upload' },
+    { label: 'Patient Files', icon: '📁', section: 'patientFiles' },
     { label: 'My Records', icon: '📋', section: 'myRecords' },
     { label: 'History', icon: '🔍', section: 'history' },
   ],

@@ -7,7 +7,7 @@ const router = express.Router();
 
 const { verifyToken } = require('../middleware/authMiddleware');
 const { requireRole } = require('../middleware/roleMiddleware');
-const { upload, getByPatient } = require('../controllers/fileController');
+const { upload, getByPatient, download } = require('../controllers/fileController');
 
 // ─── Multer Configuration ────────────────────────────────────────────────────
 // Memory storage — file stays in buffer, never written to disk as plaintext
@@ -29,7 +29,21 @@ const uploadLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting if user is not authenticated (auth middleware will reject anyway)
+    skip: (req) => !req.user,
+});
+
+// ─── Download Rate Limiter ───────────────────────────────────────────────────
+// 20 downloads per minute per user (keyed by JWT userId)
+const downloadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    keyGenerator: (req) => req.user?.userId || req.ip,
+    message: {
+        success: false,
+        message: 'Too many downloads. Please wait before downloading again (limit: 20/minute).',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
     skip: (req) => !req.user,
 });
 
@@ -53,6 +67,17 @@ router.post(
     verifyToken,
     requireRole(['patient', 'doctor']),
     getByPatient
+);
+
+// GET /api/files/download/:fileId — Decrypt & download file from IPFS
+// Protected: JWT + RBAC (patient, doctor) + rate limit
+// Validation order: JWT → RBAC → rate limit → handler (metadata → ownership → IPFS → decrypt → stream)
+router.get(
+    '/download/:fileId',
+    verifyToken,
+    requireRole(['patient', 'doctor']),
+    downloadLimiter,
+    download
 );
 
 module.exports = router;

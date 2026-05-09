@@ -57,4 +57,44 @@ const encryptFile = (fileBuffer) => {
     };
 };
 
-module.exports = { encryptFile, ALGORITHM };
+/**
+ * Decrypt an encrypted file buffer using AES-256-GCM.
+ *
+ * Requires the IV and authTag that were stored during encryption.
+ * If the authTag doesn't match (tamper detected), throws a generic
+ * error without exposing cryptographic internals.
+ *
+ * @param {Buffer} encryptedBuffer – Ciphertext
+ * @param {string} ivHex – IV as hex string (from SQLite)
+ * @param {string} authTagHex – Auth tag as hex string (from SQLite)
+ * @returns {Buffer} Decrypted plaintext buffer
+ */
+const decryptFile = (encryptedBuffer, ivHex, authTagHex) => {
+    const key = getKey();
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+
+    try {
+        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, {
+            authTagLength: AUTH_TAG_LENGTH,
+        });
+        decipher.setAuthTag(authTag);
+
+        const decrypted = Buffer.concat([
+            decipher.update(encryptedBuffer),
+            decipher.final(),
+        ]);
+
+        return decrypted;
+    } catch (err) {
+        // GCM auth tag mismatch = tampered content
+        // Generic error — do NOT expose crypto details
+        console.error('[Encryption] Decryption failed — possible tampered content');
+        throw Object.assign(
+            new Error('File integrity check failed. The encrypted content may have been tampered with.'),
+            { statusCode: 422 }
+        );
+    }
+};
+
+module.exports = { encryptFile, decryptFile, ALGORITHM };

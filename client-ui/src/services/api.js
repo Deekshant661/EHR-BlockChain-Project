@@ -72,13 +72,17 @@ export const ehrAPI = {
   fetchLedger: (data) => api.post('/ehr/fetchLedger', data),
 };
 
-// ─── File Upload API ─────────────────────────────────────────────────────────
+// ─── File Upload & Download API ──────────────────────────────────────────────
 export const fileAPI = {
   upload: (formData) => api.post('/files/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 120000, // 2 min timeout for large uploads
   }),
   getByPatient: (data) => api.post('/files/getByPatient', data),
+  download: (fileId) => api.get(`/files/download/${fileId}`, {
+    responseType: 'blob',
+    timeout: 120000,
+  }),
 };
 
 export default api;
