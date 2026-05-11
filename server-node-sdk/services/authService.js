@@ -12,6 +12,7 @@ const {
     updateVerification, setVerified, clearExpiredOtp,
 } = require('../db/database');
 const { SIGNUP_ROLES, ROLE_PREFIX, ROLE_CONFIG } = require('../fabric/constants');
+const { logAudit, ACTIONS } = require('./auditService');
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const BCRYPT_SALT_ROUNDS = 12;
@@ -142,6 +143,10 @@ const loginUser = async ({ email, password }) => {
 
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatch) {
+        logAudit(ACTIONS.LOGIN_FAILED, {
+            actorId: user.userId, actorRole: user.role,
+            status: 'failure', metadata: { email, reason: 'invalid_password' },
+        });
         throw Object.assign(new Error('Invalid email or password.'), { statusCode: 401 });
     }
 
@@ -170,6 +175,11 @@ const loginUser = async ({ email, password }) => {
     });
 
     console.log(`[Auth] Login successful for "${email}" (role=${user.role})`);
+
+    logAudit(ACTIONS.LOGIN, {
+        actorId: user.userId, actorRole: user.role,
+        metadata: { email },
+    });
 
     return {
         token,

@@ -2,6 +2,7 @@
 
 const { submitTransaction, evaluateTransaction } = require('../services/transactionService');
 const { sendSuccess } = require('../middleware/responseFormatter');
+const { logAudit, ACTIONS } = require('../services/auditService');
 
 // ─── Medical Records ─────────────────────────────────────────────────────────
 
@@ -11,6 +12,11 @@ const addRecord = async (req, res, next) => {
         const { userId } = req.user;
         const { patientId, diagnosis, prescription } = req.body;
         const result = await submitTransaction(userId, 'addRecord', { patientId, diagnosis, prescription });
+        logAudit(ACTIONS.ADD_RECORD, {
+            actorId: userId, actorRole: req.user.role,
+            targetId: patientId, targetType: 'patient',
+            metadata: { diagnosis: diagnosis?.slice(0, 60) },
+        });
         return sendSuccess(res, result);
     } catch (error) { next(error); }
 };
@@ -84,6 +90,10 @@ const grantAccess = async (req, res, next) => {
         const { userId } = req.user;
         const { patientId, doctorIdToGrant } = req.body;
         const result = await submitTransaction(userId, 'grantAccess', { patientId, doctorIdToGrant });
+        logAudit(ACTIONS.GRANT_ACCESS, {
+            actorId: userId, actorRole: req.user.role,
+            targetId: doctorIdToGrant, targetType: 'doctor',
+        });
         return sendSuccess(res, result);
     } catch (error) { next(error); }
 };
@@ -94,6 +104,10 @@ const revokeAccess = async (req, res, next) => {
         const { userId } = req.user;
         const { patientId, doctorIdToRevoke } = req.body;
         const result = await submitTransaction(userId, 'revokeAccess', { patientId, doctorIdToRevoke });
+        logAudit(ACTIONS.REVOKE_ACCESS, {
+            actorId: userId, actorRole: req.user.role,
+            targetId: doctorIdToRevoke, targetType: 'doctor',
+        });
         return sendSuccess(res, result);
     } catch (error) { next(error); }
 };
@@ -107,6 +121,11 @@ const issueInsurance = async (req, res, next) => {
         const { patientId, coverageAmount, policyType, validFrom, validTo } = req.body;
         const result = await submitTransaction(userId, 'issueInsurance', {
             patientId, coverageAmount, policyType, validFrom, validTo,
+        });
+        logAudit(ACTIONS.ISSUE_POLICY, {
+            actorId: userId, actorRole: req.user.role,
+            targetId: patientId, targetType: 'patient',
+            metadata: { policyType, coverageAmount },
         });
         return sendSuccess(res, result);
     } catch (error) { next(error); }
@@ -131,6 +150,11 @@ const createClaim = async (req, res, next) => {
         const { patientId, policyId, recordId, claimAmount, description } = req.body;
         const result = await submitTransaction(userId, 'createClaim', {
             patientId, policyId, recordId, claimAmount, description,
+        });
+        logAudit(ACTIONS.CREATE_CLAIM, {
+            actorId: userId, actorRole: req.user.role,
+            targetId: patientId, targetType: 'patient',
+            metadata: { claimAmount, description: description?.slice(0, 60) },
         });
         return sendSuccess(res, result);
     } catch (error) { next(error); }
@@ -163,6 +187,11 @@ const approveClaim = async (req, res, next) => {
         const { patientId, claimId, decision, reason } = req.body;
         const result = await submitTransaction(userId, 'approveClaim', {
             patientId, claimId, decision, reason,
+        });
+        logAudit(ACTIONS.APPROVE_CLAIM, {
+            actorId: userId, actorRole: req.user.role,
+            targetId: patientId, targetType: 'patient',
+            metadata: { claimId, decision, reason: reason?.slice(0, 60) },
         });
         return sendSuccess(res, result);
     } catch (error) { next(error); }

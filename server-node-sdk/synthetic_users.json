@@ -1,0 +1,322 @@
+[
+  {
+    "email": "demo.doctor@ehr.com",
+    "role": "doctor",
+    "password": "TestPassword123!",
+    "userId": "doc_56165f54",
+    "uuid": "fe2ddac7-8068-43e0-8d73-8f5265f31cb1",
+    "name": "Demo Doctor"
+  },
+  {
+    "email": "synth_doc_01@ehr.demo",
+    "role": "doctor",
+    "password": "TestPassword123!",
+    "userId": "doc_d6af60ad",
+    "uuid": "852ddb0b-51fd-4681-92be-9b54e150e46e",
+    "name": "Dr. Krishna Pillai"
+  },
+  {
+    "email": "synth_doc_02@ehr.demo",
+    "role": "doctor",
+    "password": "TestPassword123!",
+    "userId": "doc_7b943f3a",
+    "uuid": "a9639e5a-1c7e-43e4-8970-04cc357de9dd",
+    "name": "Dr. Pallavi Pillai"
+  },
+  {
+    "email": "synth_doc_03@ehr.demo",
+    "role": "doctor",
+    "password": "TestPassword123!",
+    "userId": "doc_554bd8bf",
+    "uuid": "44bbc942-9f12-4446-807a-dcf4fb578eda",
+    "name": "Dr. Diya Agarwal"
+  },
+  {
+    "email": "synth_doc_04@ehr.demo",
+    "role": "doctor",
+    "password": "TestPassword123!",
+    "userId": "doc_89dfdba5",
+    "uuid": "842c78ae-c48f-4af1-9669-f641f27de5ad",
+    "name": "Dr. Sneha Mukherjee"
+  },
+  {
+    "email": "synth_doc_05@ehr.demo",
+    "role": "doctor",
+    "password": "TestPassword123!",
+    "userId": "doc_d14e4dff",
+    "uuid": "7b100ab9-93dc-4163-bd48-5f1709c86662",
+    "name": "Dr. Shruti Das"
+  },
+  {
+    "email": "demo.admin@ehr.com",
+    "role": "hospital",
+    "password": "TestPassword123!",
+    "userId": "Hospital01",
+    "uuid": "4f09f90c-092e-4af7-9f0b-cac20188ba20",
+    "name": "Hospital Administrator"
+  },
+  {
+    "email": "demo.insuranceadmin@ehr.com",
+    "role": "insuranceAdmin",
+    "password": "TestPassword123!",
+    "userId": "insuranceCompany01",
+    "uuid": "dec1b6b6-282f-4389-89d2-606a23f26949",
+    "name": "Insurance Administrator"
+  },
+  {
+    "email": "demo.insurance@ehr.com",
+    "role": "insuranceAgent",
+    "password": "TestPassword123!",
+    "userId": "ins_22bb1139",
+    "uuid": "ff3362bd-761e-48bd-876b-83a277333d8f",
+    "name": "Demo Insurance Agent"
+  },
+  {
+    "email": "synth_ins_01@ehr.demo",
+    "role": "insuranceAgent",
+    "password": "TestPassword123!",
+    "userId": "ins_19582b5a",
+    "uuid": "b8efeb47-b43b-49a5-86ab-71c70c6d7732",
+    "name": "Arjun Tiwari"
+  },
+  {
+    "email": "synth_ins_02@ehr.demo",
+    "role": "insuranceAgent",
+    "password": "TestPassword123!",
+    "userId": "ins_9fd3557c",
+    "uuid": "c419bb70-cb64-4e11-a099-aba21245fd97",
+    "name": "Anjali Mehta"
+  },
+  {
+    "email": "synth_ins_03@ehr.demo",
+    "role": "insuranceAgent",
+    "password": "TestPassword123!",
+    "userId": "ins_d6f50e37",
+    "uuid": "c27ff5d9-6d88-4cfc-9248-1f473130b3d0",
+    "name": "Rohan Kapoor"
+  },
+  {
+    "email": "demo.patient@ehr.com",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_d33e6021",
+    "uuid": "b167a110-4248-44af-8695-0d9733efecde",
+    "name": "Demo Patient"
+  },
+  {
+    "email": "synth_pat_01@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_321f4650",
+    "uuid": "d660e85b-595f-4c07-abf7-36d1cf830bde",
+    "name": "Divya Kulkarni"
+  },
+  {
+    "email": "synth_pat_02@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_05dfadda",
+    "uuid": "8288bffe-b3e1-4399-9f1c-621d90ae1202",
+    "name": "Swati Chatterjee"
+  },
+  {
+    "email": "synth_pat_03@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_3e6dca06",
+    "uuid": "e7fffc1a-160c-4f2e-ba98-fbf94a2e5d4b",
+    "name": "Dev Mehta"
+  },
+  {
+    "email": "synth_pat_04@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_4251b85e",
+    "uuid": "8d97dbf6-c8c0-4b8f-9b50-b49c6a0058b6",
+    "name": "Sai Shah"
+  },
+  {
+    "email": "synth_pat_05@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_ed3f617f",
+    "uuid": "24ea3391-c4b4-4bd8-899d-1ac2c6312baf",
+    "name": "Vihaan Gupta"
+  },
+  {
+    "email": "synth_pat_06@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_b80ef4bf",
+    "uuid": "abb612b2-4b79-4648-8719-5da0b0a6aa7e",
+    "name": "Vivaan Mukherjee"
+  },
+  {
+    "email": "synth_pat_07@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_a77fb126",
+    "uuid": "7bfde7c6-a3a7-4d6f-9e3a-d24651aa845d",
+    "name": "Tanvi Malhotra"
+  },
+  {
+    "email": "synth_pat_08@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_aa0a3d76",
+    "uuid": "bf93fe8c-ce06-461b-8a22-efb8bb89d707",
+    "name": "Shruti Kulkarni"
+  },
+  {
+    "email": "synth_pat_09@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_7520126a",
+    "uuid": "789e1683-7076-4c25-b511-475abbeda987",
+    "name": "Suresh Nair"
+  },
+  {
+    "email": "synth_pat_10@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_fe90a367",
+    "uuid": "e27fc82a-7d02-4893-8051-94e5b963afd6",
+    "name": "Arjun Gupta"
+  },
+  {
+    "email": "synth_pat_11@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_a3d1bf93",
+    "uuid": "a9964ed1-f6fb-4812-a67b-6a97e1572899",
+    "name": "Ishaan Chauhan"
+  },
+  {
+    "email": "synth_pat_12@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_2adaf741",
+    "uuid": "6fa0e97e-b35c-4b63-94cb-9d896cd22b44",
+    "name": "Gaurav Gupta"
+  },
+  {
+    "email": "synth_pat_13@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_079d0dfc",
+    "uuid": "3feec980-969f-411b-9001-0cb4938dadc8",
+    "name": "Vivaan Patel"
+  },
+  {
+    "email": "synth_pat_14@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_d7208b4c",
+    "uuid": "6c44f6e8-a6d2-4f65-b648-51187c71854d",
+    "name": "Pooja Joshi"
+  },
+  {
+    "email": "synth_pat_15@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_566912ff",
+    "uuid": "13087616-fa02-4bcc-abc6-9337257ce6ee",
+    "name": "Aditya Verma"
+  },
+  {
+    "email": "synth_pat_16@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_ac4601b7",
+    "uuid": "de96c4f3-b763-4595-8264-86bfce2ac683",
+    "name": "Rajesh Patel"
+  },
+  {
+    "email": "synth_pat_17@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_70da4417",
+    "uuid": "d4bb6c52-d167-45c4-83f5-2d2909c60cc0",
+    "name": "Manish Joshi"
+  },
+  {
+    "email": "synth_pat_18@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_048885f6",
+    "uuid": "23e71be5-7ba2-4b53-b0d5-4257f6c0454e",
+    "name": "Pallavi Nair"
+  },
+  {
+    "email": "synth_pat_19@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_17430782",
+    "uuid": "20ee22de-091f-4c29-a83c-a3cc12004501",
+    "name": "Riya Singh"
+  },
+  {
+    "email": "synth_pat_20@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_75177fba",
+    "uuid": "8356403b-9d89-4ab6-bcb3-d9f840ee05a1",
+    "name": "Harsh Deshmukh"
+  },
+  {
+    "email": "synth_pat_21@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_03a33f51",
+    "uuid": "5664dab8-f4c0-46c7-a5c9-0956c3630c53",
+    "name": "Lakshmi Tiwari"
+  },
+  {
+    "email": "synth_pat_22@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_8263635f",
+    "uuid": "bdf6ed8a-15be-4819-87da-b049347b3c8e",
+    "name": "Sai Malhotra"
+  },
+  {
+    "email": "synth_pat_23@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_bae19548",
+    "uuid": "65ae14e0-bd30-40f3-988b-1e3d5bd828db",
+    "name": "Rajesh Mehta"
+  },
+  {
+    "email": "synth_pat_24@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_9ea8d047",
+    "uuid": "74c20690-d0fd-42ee-ae4e-a2f60292fe72",
+    "name": "Swati Thakur"
+  },
+  {
+    "email": "synth_pat_25@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_baa81a69",
+    "uuid": "8999db0b-5e4e-4315-87e3-9d46c2001f66",
+    "name": "Ishaan Deshmukh"
+  },
+  {
+    "email": "synth_pat_showcase1@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_8ce1653a",
+    "uuid": "3773fd69-9b00-4491-8093-345bbaf83c8a",
+    "name": "Rajesh Verma"
+  },
+  {
+    "email": "synth_pat_showcase2@ehr.demo",
+    "role": "patient",
+    "password": "TestPassword123!",
+    "userId": "pat_741f48c3",
+    "uuid": "8ebc6712-4235-4332-b6e6-7a25bae622f4",
+    "name": "Meera Nair"
+  }
+]

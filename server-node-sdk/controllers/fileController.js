@@ -6,6 +6,7 @@ const { uploadToIPFS, fetchFromIPFS } = require('../services/ipfsService');
 const { insertFile, getFilesByPatient, getFileById } = require('../db/database');
 const { sendSuccess, sendError } = require('../middleware/responseFormatter');
 const { checkDoctorConsent } = require('../services/accessControlService');
+const { logAudit, ACTIONS } = require('../services/auditService');
 
 // ─── Allowed MIME Types ──────────────────────────────────────────────────────
 const ALLOWED_MIME_TYPES = [
@@ -95,6 +96,12 @@ const upload = async (req, res, next) => {
         });
 
         console.log(`[File] Upload complete. fileId=${result.lastInsertRowid}, CID=${cid}`);
+
+        logAudit(ACTIONS.FILE_UPLOAD, {
+            actorId: req.user.uuid, actorRole: req.user.role,
+            targetId: patientUUID, targetType: 'patient',
+            metadata: { fileName: req.file.originalname, fileSize: req.file.size, cid },
+        });
 
         return sendSuccess(res, {
             fileId: result.lastInsertRowid,
@@ -275,6 +282,13 @@ const download = async (req, res, next) => {
         });
 
         console.log(`[File] Download complete. fileId=${fileId}, ${decryptedBuffer.length} bytes sent.`);
+
+        logAudit(ACTIONS.FILE_DOWNLOAD, {
+            actorId: req.user.uuid, actorRole: req.user.role,
+            targetId: file.patientUUID, targetType: 'patient',
+            metadata: { fileName: file.originalFileName, fileId },
+        });
+
         return res.send(decryptedBuffer);
 
     } catch (error) {

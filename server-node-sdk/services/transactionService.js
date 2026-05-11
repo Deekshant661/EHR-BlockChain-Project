@@ -2,6 +2,7 @@
 
 const { connectGateway } = require('../fabric/networkConnection');
 const { ROLE_CONFIG } = require('../fabric/constants');
+const { findUserByUserId } = require('../db/database');
 
 /**
  * Submit a transaction (read-write) to the chaincode.
@@ -47,7 +48,7 @@ const evaluateTransaction = async (userId, functionName, args, orgName) => {
         console.log(`[Tx:eval] ${functionName} by ${userId} →`, JSON.stringify(args));
         let result = await contract.evaluateTransaction(functionName, JSON.stringify(args));
         result = JSON.parse(result);
-        console.log(`[Tx:eval] ${functionName} response:`, result);
+        console.log(`[Tx:eval] ${functionName} response length:`, Array.isArray(result) ? result.length : typeof result);
         return result;
     } finally {
         gateway.disconnect();
@@ -55,9 +56,36 @@ const evaluateTransaction = async (userId, functionName, args, orgName) => {
 };
 
 /**
- * Try to determine the org for a userId by checking role config or defaulting to Org1.
+ * Resolve the correct Fabric org for a userId by checking:
+ * 1. The database user record for role → ROLE_CONFIG mapping
+ * 2. The wallet userMeta for stored orgName
+ * 3. Default to Org1 as fallback
  */
 const resolveOrg = (userId) => {
+    // Try to resolve from SQLite user record
+    try {
+        const user = findUserByUserId(userId);
+        if (user && user.orgName) {
+            return user.orgName;
+        }
+        if (user && user.role && ROLE_CONFIG[user.role]) {
+            return ROLE_CONFIG[user.role].org;
+        }
+    } catch (err) {
+        console.warn(`[Tx] Could not resolve org from DB for ${userId}:`, err.message);
+    }
+
+    // Try wallet metadata
+    try {
+        const { getUserMeta } = require('../fabric/identityManager');
+        const meta = getUserMeta(userId);
+        if (meta && meta.orgName) {
+            return meta.orgName;
+        }
+    } catch (err) {
+        console.warn(`[Tx] Could not resolve org from wallet meta for ${userId}:`, err.message);
+    }
+
     // Default to Org1 — the gateway discovery will handle cross-org peers
     return 'Org1';
 };

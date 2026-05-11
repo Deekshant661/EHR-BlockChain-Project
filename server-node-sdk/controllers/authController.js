@@ -2,6 +2,7 @@
 
 const { signupUser, loginUser, verifyEmail, resendOtp } = require('../services/authService');
 const { sendSuccess, sendError } = require('../middleware/responseFormatter');
+const { logAudit, ACTIONS } = require('../services/auditService');
 
 /**
  * POST /api/auth/signup
@@ -57,8 +58,21 @@ const login = async (req, res, next) => {
             });
         }
 
+        // Audit log: successful login
+        if (result.user) {
+            logAudit(ACTIONS.LOGIN, {
+                actorId: result.user.userId,
+                actorRole: result.user.role,
+                metadata: { email },
+            });
+        }
+
         return sendSuccess(res, result, 200);
     } catch (error) {
+        // Audit log: failed login
+        logAudit(ACTIONS.LOGIN_FAILED, {
+            metadata: { email, reason: error.message },
+        });
         next(error);
     }
 };

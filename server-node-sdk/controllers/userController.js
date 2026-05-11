@@ -1,6 +1,7 @@
 'use strict';
 
 const { signupUser } = require('../services/enrollmentService');
+const { getAllUsers } = require('../db/database');
 const { sendSuccess, sendError } = require('../middleware/responseFormatter');
 
 /**
@@ -22,4 +23,28 @@ const enroll = async (req, res, next) => {
     }
 };
 
-module.exports = { enroll };
+/**
+ * GET /api/users/directory
+ * Admin-only: Returns user list with isSynthetic flag for Demo User badges.
+ * Excludes sensitive fields (passwordHash, verificationCode, etc.)
+ */
+const getUserDirectory = async (req, res, next) => {
+    try {
+        const users = getAllUsers();
+        const sanitized = users.map((u) => ({
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            userId: u.userId,
+            uuid: u.uuid,
+            orgName: u.orgName,
+            isSynthetic: u.isSynthetic === 1,
+            createdAt: u.createdAt,
+        }));
+        return sendSuccess(res, sanitized);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { enroll, getUserDirectory };

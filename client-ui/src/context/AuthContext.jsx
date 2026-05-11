@@ -11,6 +11,18 @@ const ROLE_ROUTES = {
   insuranceAdmin: '/insurance-admin/dashboard',
 };
 
+// ─── Role Normalization ──────────────────────────────────────────────────────
+// The Fabric identity model uses short role names (e.g. 'hospital').
+// The frontend UI uses descriptive names (e.g. 'hospitalAdmin').
+// This function bridges the two without modifying backend/Fabric data.
+const ROLE_MAP = { hospital: 'hospitalAdmin' };
+const normalizeRole = (role) => ROLE_MAP[role] || role;
+
+const normalizeUser = (user) => {
+  if (!user) return user;
+  return { ...user, role: normalizeRole(user.role) };
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -23,7 +35,7 @@ export function AuthProvider({ children }) {
     if (savedToken && savedUser) {
       try {
         setToken(savedToken);
-        setUser(JSON.parse(savedUser));
+        setUser(normalizeUser(JSON.parse(savedUser)));
       } catch {
         localStorage.removeItem('ehr_token');
         localStorage.removeItem('ehr_user');
@@ -57,10 +69,11 @@ export function AuthProvider({ children }) {
     }
 
     const { token: newToken, user: newUser } = data.data;
+    const normalized = normalizeUser(newUser);
     localStorage.setItem('ehr_token', newToken);
-    localStorage.setItem('ehr_user', JSON.stringify(newUser));
+    localStorage.setItem('ehr_user', JSON.stringify(normalized));
     setToken(newToken);
-    setUser(newUser);
+    setUser(normalized);
     return data;
   };
 
@@ -70,11 +83,12 @@ export function AuthProvider({ children }) {
   const verifyEmail = async ({ email, otp }) => {
     const res = await authAPI.verifyEmail({ email, otp });
     const { token: newToken, user: newUser } = res.data.data;
+    const normalized = normalizeUser(newUser);
     localStorage.setItem('ehr_token', newToken);
-    localStorage.setItem('ehr_user', JSON.stringify(newUser));
+    localStorage.setItem('ehr_user', JSON.stringify(normalized));
     setToken(newToken);
-    setUser(newUser);
-    return newUser;
+    setUser(normalized);
+    return normalized;
   };
 
   const logout = () => {

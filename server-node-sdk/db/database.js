@@ -48,6 +48,7 @@ const initDatabase = () => {
         'ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT 0',
         'ALTER TABLE users ADD COLUMN verificationCode TEXT',
         'ALTER TABLE users ADD COLUMN verificationExpires DATETIME',
+        'ALTER TABLE users ADD COLUMN isSynthetic BOOLEAN DEFAULT 0',
     ];
     migrations.forEach((sql) => {
         try { db.exec(sql); } catch { /* column already exists — safe to ignore */ }
@@ -76,6 +77,30 @@ const initDatabase = () => {
         );
     `);
 
+    // ── Seed Metadata Table ──────────────────────────────────────────────────
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS seed_metadata (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+    `);
+
+    // ── Audit Logs Table ─────────────────────────────────────────────────────
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
+            actorId     TEXT,
+            actorRole   TEXT,
+            actionType  TEXT NOT NULL,
+            severity    TEXT DEFAULT 'info',
+            targetId    TEXT,
+            targetType  TEXT,
+            status      TEXT DEFAULT 'success',
+            metadata    TEXT
+        );
+    `);
+
     console.log('[Database] SQLite initialized at', DB_PATH);
     return db;
 };
@@ -92,6 +117,19 @@ const createUser = ({ name, email, passwordHash, userId, uuid, role, orgName }) 
     const stmt = db.prepare(`
         INSERT INTO users (name, email, passwordHash, userId, uuid, role, orgName, isVerified)
         VALUES (@name, @email, @passwordHash, @userId, @uuid, @role, @orgName, 0)
+    `);
+    return stmt.run({ name, email, passwordHash, userId, uuid, role, orgName });
+};
+
+/**
+ * Insert a synthetic (auto-verified) user. Bypasses OTP — used by seed scripts.
+ * @param {Object} user
+ * @returns {Object} The inserted row info
+ */
+const createSyntheticUser = ({ name, email, passwordHash, userId, uuid, role, orgName }) => {
+    const stmt = db.prepare(`
+        INSERT INTO users (name, email, passwordHash, userId, uuid, role, orgName, isVerified, isSynthetic)
+        VALUES (@name, @email, @passwordHash, @userId, @uuid, @role, @orgName, 1, 1)
     `);
     return stmt.run({ name, email, passwordHash, userId, uuid, role, orgName });
 };
@@ -114,6 +152,37 @@ const findUserByEmail = (email) => {
 const findUserByUserId = (userId) => {
     const stmt = db.prepare('SELECT * FROM users WHERE userId = ?');
     return stmt.get(userId);
+};
+
+/**
+ * Find a user by their blockchain UUID.
+ * @param {string} uuid
+ * @returns {Object|undefined}
+ */
+const findUserByUUID = (uuid) => {
+    const stmt = db.prepare('SELECT * FROM users WHERE uuid = ?');
+    return stmt.get(uuid);
+};
+
+/**
+ * Count how many synthetic users exist (for idempotency checks).
+ * @returns {number}
+ */
+const countSyntheticUsers = () => {
+    const row = db.prepare('SELECT COUNT(*) AS cnt FROM users WHERE isSynthetic = 1').get();
+    return row.cnt;
+};
+
+/**
+ * Get all users (optionally filtered by role).
+ * @param {string} [role]
+ * @returns {Array}
+ */
+const getAllUsers = (role) => {
+    if (role) {
+        return db.prepare('SELECT * FROM users WHERE role = ?').all(role);
+    }
+    return db.prepare('SELECT * FROM users').all();
 };
 
 /**
@@ -167,6 +236,20 @@ const insertFile = ({ patientUUID, uploadedBy, uploaderRole, originalFileName, m
 };
 
 /**
+ * Insert a medical file metadata record with a custom upload timestamp.
+ * Used by seed scripts for historical data realism.
+ * @param {Object} file
+ * @returns {Object} { lastInsertRowid }
+ */
+const insertFileWithTimestamp = ({ patientUUID, uploadedBy, uploaderRole, originalFileName, mimeType, fileSize, ipfsCid, encryptionIv, encryptionAlgorithm, authTag, uploadTimestamp }) => {
+    const stmt = db.prepare(`
+        INSERT INTO medical_files (patientUUID, uploadedBy, uploaderRole, originalFileName, mimeType, fileSize, ipfsCid, encryptionIv, encryptionAlgorithm, authTag, uploadTimestamp)
+        VALUES (@patientUUID, @uploadedBy, @uploaderRole, @originalFileName, @mimeType, @fileSize, @ipfsCid, @encryptionIv, @encryptionAlgorithm, @authTag, @uploadTimestamp)
+    `);
+    return stmt.run({ patientUUID, uploadedBy, uploaderRole, originalFileName, mimeType, fileSize, ipfsCid, encryptionIv, encryptionAlgorithm, authTag, uploadTimestamp });
+};
+
+/**
  * Get all medical files for a patient.
  * @param {string} patientUUID
  * @returns {Array} File metadata rows
@@ -186,16 +269,123 @@ const getFileById = (fileId) => {
     return stmt.get(fileId);
 };
 
+// ─── Synthetic Data Cleanup Helpers ──────────────────────────────────────────
+
+/**
+ * Delete all synthetic users from the users table.
+ * @returns {number} Number of rows deleted.
+ */
+const deleteSyntheticUsers = () => {
+    const result = db.prepare('DELETE FROM users WHERE isSynthetic = 1').run();
+    return result.changes;
+};
+
+/**
+ * Delete all medical file entries uploaded by synthetic users.
+ * Uses a subquery to match on synthetic user UUIDs.
+ * @returns {number} Number of rows deleted.
+ */
+const deleteSyntheticFiles = () => {
+    const result = db.prepare(`
+        DELETE FROM medical_files WHERE uploadedBy IN (
+            SELECT uuid FROM users WHERE isSynthetic = 1
+        ) OR patientUUID IN (
+            SELECT uuid FROM users WHERE isSynthetic = 1
+        )
+    `).run();
+    return result.changes;
+};
+
+/**
+ * Count total medical files in database.
+ * @returns {number}
+ */
+const countFiles = () => {
+    const row = db.prepare('SELECT COUNT(*) AS cnt FROM medical_files').get();
+    return row.cnt;
+};
+
+// ─── Seed Metadata Helpers ───────────────────────────────────────────────────
+
+const getSeedMeta = (key) => {
+    const row = db.prepare('SELECT value FROM seed_metadata WHERE key = ?').get(key);
+    return row ? row.value : null;
+};
+
+const setSeedMeta = (key, value) => {
+    db.prepare('INSERT OR REPLACE INTO seed_metadata (key, value) VALUES (?, ?)').run(key, value);
+};
+
+// ─── Audit Log Helpers ───────────────────────────────────────────────────────
+
+/**
+ * Insert an audit log entry. Fire-and-forget — errors are swallowed.
+ * @param {Object} entry
+ */
+const insertAuditLog = ({ actorId, actorRole, actionType, severity, targetId, targetType, status, metadata }) => {
+    try {
+        db.prepare(`
+            INSERT INTO audit_logs (actorId, actorRole, actionType, severity, targetId, targetType, status, metadata)
+            VALUES (@actorId, @actorRole, @actionType, @severity, @targetId, @targetType, @status, @metadata)
+        `).run({
+            actorId: actorId || null,
+            actorRole: actorRole || null,
+            actionType,
+            severity: severity || 'info',
+            targetId: targetId || null,
+            targetType: targetType || null,
+            status: status || 'success',
+            metadata: metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : null,
+        });
+    } catch (err) {
+        console.error('[Audit] Failed to insert audit log:', err.message);
+    }
+};
+
+/**
+ * Get recent audit log entries (paginated).
+ * @param {number} limit – Max entries to return
+ * @param {number} offset – Offset for pagination
+ * @returns {Array}
+ */
+const getRecentAuditLogs = (limit = 20, offset = 0) => {
+    return db.prepare(
+        'SELECT * FROM audit_logs ORDER BY id DESC LIMIT ? OFFSET ?'
+    ).all(limit, offset);
+};
+
+/**
+ * Count total audit log entries.
+ * @returns {number}
+ */
+const countAuditLogs = () => {
+    const row = db.prepare('SELECT COUNT(*) AS cnt FROM audit_logs').get();
+    return row.cnt;
+};
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 module.exports = {
     initDatabase,
     createUser,
+    createSyntheticUser,
     findUserByEmail,
     findUserByUserId,
+    findUserByUUID,
+    countSyntheticUsers,
+    getAllUsers,
     updateVerification,
     setVerified,
     clearExpiredOtp,
     insertFile,
+    insertFileWithTimestamp,
     getFilesByPatient,
     getFileById,
+    deleteSyntheticUsers,
+    deleteSyntheticFiles,
+    countFiles,
+    getSeedMeta,
+    setSeedMeta,
+    insertAuditLog,
+    getRecentAuditLogs,
+    countAuditLogs,
 };

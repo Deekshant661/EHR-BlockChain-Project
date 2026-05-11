@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
+    "seed": "node scripts/seed.js",
+    "seed:dry": "node scripts/seed.js --dry-run",
+    "seed:cleanup": "node scripts/cleanup.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +15,7 @@
   "license": "ISC",
   "description": "EHR Blockchain Server — Hyperledger Fabric Node.js SDK middleware",
   "dependencies": {
+    "@faker-js/faker": "^9.0.0",
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.7.0",
     "cors": "^2.8.5",

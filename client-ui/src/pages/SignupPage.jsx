@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import LoadingSpinner from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
+import { SanchayBrand } from '../components/SanchayLogo';
 
 const ROLES = [
   { value: 'patient', label: 'Patient' },
@@ -27,53 +27,48 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const profileData = {};
+      const profileData = { name: form.name };
       if (form.role === 'doctor') { profileData.hospitalName = form.hospitalName || 'General Hospital'; profileData.city = form.city; }
       if (form.role === 'patient') { profileData.city = form.city; }
       if (form.role === 'insuranceAgent') { profileData.insuranceCompany = form.hospitalName || 'Default Insurance Co'; profileData.city = form.city; }
-      profileData.name = form.name;
 
       const result = await signup({ name: form.name, email: form.email, password: form.password, role: form.role, profileData });
-
-      // Signup now returns requiresVerification — redirect to OTP page
-      if (result.requiresVerification) {
-        navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
-        return;
-      }
+      if (result.requiresVerification) { navigate(`/verify-email?email=${encodeURIComponent(form.email)}`); return; }
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-surface-950 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-surface-950 bg-grid-pattern flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary-600/8 rounded-full blur-[100px] pointer-events-none" />
+
       {error && <Toast message={error} type="error" onClose={() => setError('')} />}
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center text-xl font-bold">E</div>
-            <span className="text-xl font-bold text-white">EHR Blockchain</span>
-          </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Create your account</h1>
-          <p className="text-white/40">Join the blockchain health network</p>
+          <div className="mb-8">
+            <SanchayBrand size={40} />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create your account</h1>
+          <p className="text-white/35 text-sm">Join the blockchain health network</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           <div>
             <label className="label">Full Name *</label>
-            <input type="text" className="input-field" placeholder="John Doe" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <input type="text" className="input-field" placeholder="John Doe" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} id="signup-name" />
           </div>
           <div>
             <label className="label">Email *</label>
-            <input type="email" className="input-field" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <input type="email" className="input-field" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} id="signup-email" />
           </div>
           <div>
             <label className="label">Password *</label>
-            <input type="password" className="input-field" placeholder="Min 8 characters" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <input type="password" className="input-field" placeholder="Min 8 characters" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} id="signup-password" />
           </div>
           <div>
             <label className="label">Role *</label>
-            <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+            <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} id="signup-role">
               <option value="">Select role...</option>
               {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
@@ -98,13 +93,13 @@ export default function SignupPage() {
             </div>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-2">
-            {loading ? <LoadingSpinner size="sm" /> : 'Create Account & Enroll on Blockchain'}
+          <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-2 py-3" id="signup-submit">
+            {loading ? <><span className="spinner spinner-sm" /> Creating Account...</> : 'Create Account & Enroll on Blockchain'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-white/40 mt-6">
-          Already have an account? <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">Sign in</Link>
+        <p className="text-center text-sm text-white/35 mt-6">
+          Already have an account? <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium transition-colors">Sign in</Link>
         </p>
       </div>
     </div>

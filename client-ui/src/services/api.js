@@ -72,6 +72,11 @@ export const ehrAPI = {
   fetchLedger: (data) => api.post('/ehr/fetchLedger', data),
 };
 
+// ─── User Directory API (Admin Only) ─────────────────────────────────────────
+export const userAPI = {
+  getUserDirectory: () => api.get('/users/directory'),
+};
+
 // ─── File Upload & Download API ──────────────────────────────────────────────
 export const fileAPI = {
   upload: (formData) => api.post('/files/upload', formData, {
@@ -83,6 +88,21 @@ export const fileAPI = {
     responseType: 'blob',
     timeout: 120000,
   }),
+};
+
+// ─── Admin Analytics API (Server-side aggregation) ───────────────────────────
+export const adminAPI = {
+  getHospitalAnalytics: () => api.get('/admin/analytics/hospital'),
+  getInsuranceAnalytics: () => api.get('/admin/analytics/insurance'),
+  getSystemHealth: () => api.get('/admin/health'),
+  getLedgerData: () => api.get('/admin/ledger'),
+  invalidateCache: () => api.post('/admin/invalidate-cache'),
+  getLiveActivity: (limit = 15) => api.get(`/admin/activity/live?limit=${limit}`),
+};
+
+// ─── Audit API ───────────────────────────────────────────────────────────────
+export const auditAPI = {
+  getRecent: (limit = 20) => api.get(`/audit/recent?limit=${limit}`),
 };
 
 export default api;
