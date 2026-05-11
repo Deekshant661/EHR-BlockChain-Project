@@ -137,3 +137,9 @@ dist
 
 
 server-node-sdk/wallet/
+
+# Ignore all markdown files (notes, walkthroughs, logs)
+*.md
+
+# BUT keep the main README file!
+!README.md
