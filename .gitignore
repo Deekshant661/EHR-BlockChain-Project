@@ -142,4 +142,4 @@ server-node-sdk/wallet/
 *.md
 
 # BUT keep the main README file!
-!README.md
+!/README.md
