@@ -1,0 +1,26 @@
+# ─── Sanchay Backend — Local Dev Dockerfile ───────────────────────────────────
+# Base: node:18-alpine with native build tools for Fabric SDK crypto deps
+# Usage: Built via docker-compose.yml (not standalone)
+
+FROM node:18-alpine
+
+# Native build deps required by fabric-ca-client and better-sqlite3
+RUN apk add --no-cache python3 make g++ git
+
+WORKDIR /app
+
+# Install dependencies first (cache layer)
+COPY package.json package-lock.json ./
+RUN npm ci --production=false
+
+# Copy source (wallet/ and db/ are volume-mounted, not baked in)
+COPY . .
+
+# Don't copy these into the image — they'll be volume-mounted
+# wallet/   → persisted across restarts
+# db/       → SQLite files persisted
+# .env      → environment config
+
+EXPOSE 5000
+
+CMD ["node", "app.js"]

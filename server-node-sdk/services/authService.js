@@ -6,10 +6,11 @@ const crypto = require('crypto');
 
 const { signupUser: fabricSignup } = require('./enrollmentService');
 const { identityExists } = require('../fabric/identityManager');
-const { sendVerificationEmail } = require('./emailService');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('./emailService');
 const {
     createUser, findUserByEmail,
     updateVerification, setVerified, clearExpiredOtp,
+    updateResetCode, clearResetCode, updatePassword,
 } = require('../db/database');
 const { SIGNUP_ROLES, ROLE_PREFIX, ROLE_CONFIG } = require('../fabric/constants');
 const { logAudit, ACTIONS } = require('./auditService');
@@ -288,4 +289,122 @@ const resendOtp = async ({ email }) => {
     return { message: 'A new verification code has been sent to your email.' };
 };
 
-module.exports = { signupUser, loginUser, verifyEmail, resendOtp };
+// ─── Forgot Password ─────────────────────────────────────────────────────────
+/**
+ * Generate a password reset OTP and email it.
+ * Uses generic responses to never reveal if an email exists.
+ */
+const forgotPassword = async ({ email }) => {
+    if (!email) {
+        throw Object.assign(new Error('Email is required.'), { statusCode: 400 });
+    }
+
+    // Generic response for ALL cases — never leak email existence
+    const genericResponse = {
+        message: 'If an account with that email exists, a password reset code has been sent.',
+    };
+
+    const user = findUserByEmail(email);
+    if (!user) {
+        // Email doesn't exist — return generic success (don't reveal)
+        return genericResponse;
+    }
+
+    // Rate limit: if a reset code was sent recently, check cooldown
+    if (user.resetCodeExpires) {
+        const expiresAt = new Date(user.resetCodeExpires).getTime();
+        const sentAt = expiresAt - OTP_EXPIRY_MINUTES * 60 * 1000;
+        const elapsed = Date.now() - sentAt;
+        if (elapsed < 60 * 1000) {
+            // Less than 60s since last send — silently return generic
+            return genericResponse;
+        }
+    }
+
+    // Generate OTP + expiry
+    const otp = generateOtp();
+    const expires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+    updateResetCode(email, otp, expires);
+
+    // Send email (fire — if it fails, still return generic)
+    try {
+        await sendPasswordResetEmail(email, otp, user.name);
+    } catch (err) {
+        console.error('[Auth] Failed to send reset email:', err.message);
+        // Still return generic — don't reveal failure
+    }
+
+    console.log(`[Auth] Password reset OTP sent to "${email}"`);
+    return genericResponse;
+};
+
+// ─── Reset Password ──────────────────────────────────────────────────────────
+/**
+ * Validate reset OTP and update password.
+ * Uses generic error messages to prevent OTP enumeration.
+ */
+const resetPassword = async ({ email, otp, newPassword }) => {
+    if (!email || !otp || !newPassword) {
+        throw Object.assign(
+            new Error('Email, reset code, and new password are required.'),
+            { statusCode: 400 }
+        );
+    }
+
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+        throw Object.assign(
+            new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`),
+            { statusCode: 400 }
+        );
+    }
+
+    const user = findUserByEmail(email);
+    if (!user) {
+        throw Object.assign(
+            new Error('Invalid or expired reset code.'),
+            { statusCode: 400 }
+        );
+    }
+
+    // Check reset code exists
+    if (!user.resetCode || !user.resetCodeExpires) {
+        throw Object.assign(
+            new Error('Invalid or expired reset code.'),
+            { statusCode: 400 }
+        );
+    }
+
+    // Check expiration
+    const isExpired = new Date(user.resetCodeExpires) < new Date();
+    if (isExpired) {
+        clearResetCode(email);
+        throw Object.assign(
+            new Error('Invalid or expired reset code.'),
+            { statusCode: 400 }
+        );
+    }
+
+    // Check OTP match — generic error
+    if (user.resetCode !== otp) {
+        throw Object.assign(
+            new Error('Invalid or expired reset code.'),
+            { statusCode: 400 }
+        );
+    }
+
+    // Hash new password and update
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
+    updatePassword(email, passwordHash);
+    clearResetCode(email);
+
+    console.log(`[Auth] Password reset successful for "${email}"`);
+
+    logAudit(ACTIONS.LOGIN, {
+        actorId: user.userId, actorRole: user.role,
+        metadata: { email, action: 'password_reset' },
+    });
+
+    return { message: 'Password has been reset successfully. Please log in with your new password.' };
+};
+
+module.exports = { signupUser, loginUser, verifyEmail, resendOtp, forgotPassword, resetPassword };

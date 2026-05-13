@@ -6,14 +6,14 @@ const express = require('express');
 const cors = require('cors');
 
 // ─── Internal Modules ────────────────────────────────────────────────────────
-const { initDatabase }       = require('./db/database');
-const { bootstrapAdmins }    = require('./services/adminBootstrap');
-const authRoutes             = require('./routes/authRoutes');
-const userRoutes             = require('./routes/userRoutes');
-const ehrRoutes              = require('./routes/ehrRoutes');
-const fileRoutes             = require('./routes/fileRoutes');
-const adminRoutes            = require('./routes/adminRoutes');
-const auditRoutes            = require('./routes/auditRoutes');
+const { initDatabase } = require('./db/database');
+const { bootstrapAdmins } = require('./services/adminBootstrap');
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const ehrRoutes = require('./routes/ehrRoutes');
+const fileRoutes = require('./routes/fileRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
 // ─── Express App ─────────────────────────────────────────────────────────────
@@ -30,9 +30,9 @@ app.get('/status', (req, res) => {
 });
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
-app.use('/api/auth',  authRoutes);   // POST /api/auth/signup, /api/auth/login
+app.use('/api/auth', authRoutes);   // POST /api/auth/signup, /api/auth/login
 app.use('/api/users', userRoutes);   // POST /api/users/enroll (legacy/direct)
-app.use('/api/ehr',   ehrRoutes);    // POST /api/ehr/<chaincode-function> (JWT protected)
+app.use('/api/ehr', ehrRoutes);    // POST /api/ehr/<chaincode-function> (JWT protected)
 app.use('/api/files', fileRoutes);   // POST /api/files/upload, /api/files/getByPatient (JWT + RBAC)
 app.use('/api/admin', adminRoutes);  // GET  /api/admin/analytics/* (Admin analytics)
 app.use('/api/audit', auditRoutes);  // GET  /api/audit/recent (Admin audit feed)
@@ -57,7 +57,7 @@ bootstrapAdmins()
     .catch((err) => {
         console.error('[Startup] Admin bootstrap failed:', err.message);
         console.warn('[Startup] Starting server without admin auto-enrollment...');
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () => {
             console.log(`\n⚠️  EHR Server running on port ${PORT} (admin bootstrap skipped)\n`);
         });
     });

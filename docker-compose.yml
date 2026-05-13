@@ -1,0 +1,69 @@
+# ─── Sanchay — Local Development Docker Compose ──────────────────────────────
+# Starts: API server + Frontend dev server
+# Fabric: Started separately via network.sh (NOT in this compose file)
+#
+# Usage:
+#   docker compose up -d --build
+#   docker compose down
+#
+# Prerequisites:
+#   1. Fabric network must be running (./network.sh up createChannel -ca -s couchdb)
+#   2. Chaincode must be deployed
+#   3. Wallet identities must be enrolled (bootstrapAdmins handles this)
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ─── Backend API Server ───────────────────────────────────────────────────
+  api:
+    build:
+      context: ./server-node-sdk
+      dockerfile: Dockerfile.dev
+    container_name: sanchay-api
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist wallet across rebuilds (enrolled identities)
+      - ./server-node-sdk/wallet:/app/wallet
+      # Persist SQLite database
+      - ./server-node-sdk/db:/app/db
+      # Mount Fabric connection profiles + crypto material
+      - ./fabric-samples:/fabric-samples
+    env_file:
+      - ./server-node-sdk/.env
+    environment:
+      - FABRIC_AS_LOCALHOST=false
+    networks:
+      - fabric_test
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─── Frontend Dev Server ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./client-ui
+      dockerfile: Dockerfile.dev
+    container_name: sanchay-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://sanchay-api:5000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - fabric_test
+    restart: unless-stopped
+
+# ─── External Network ────────────────────────────────────────────────────────
+# The fabric_test network is created by Fabric's network.sh.
+# The API container must attach to it to resolve peer/orderer/CA hostnames.
+networks:
+  fabric_test:
+    external: true
+    name: fabric_test

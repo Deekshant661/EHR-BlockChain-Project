@@ -1,6 +1,6 @@
 'use strict';
 
-const { signupUser, loginUser, verifyEmail, resendOtp } = require('../services/authService');
+const { signupUser, loginUser, verifyEmail, resendOtp, forgotPassword, resetPassword } = require('../services/authService');
 const { sendSuccess, sendError } = require('../middleware/responseFormatter');
 const { logAudit, ACTIONS } = require('../services/auditService');
 
@@ -115,4 +115,42 @@ const resendOtpHandler = async (req, res, next) => {
     }
 };
 
-module.exports = { signup, login, verifyEmail: verifyEmailHandler, resendOtp: resendOtpHandler };
+/**
+ * POST /api/auth/forgot-password
+ * Body: { email }
+ */
+const forgotPasswordHandler = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return sendError(res, 'Email is required.', 400);
+        }
+
+        const result = await forgotPassword({ email });
+        return sendSuccess(res, result, 200);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Body: { email, otp, newPassword }
+ */
+const resetPasswordHandler = async (req, res, next) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return sendError(res, 'Email, reset code, and new password are required.', 400);
+        }
+
+        const result = await resetPassword({ email, otp, newPassword });
+        return sendSuccess(res, result, 200);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { signup, login, verifyEmail: verifyEmailHandler, resendOtp: resendOtpHandler, forgotPassword: forgotPasswordHandler, resetPassword: resetPasswordHandler };

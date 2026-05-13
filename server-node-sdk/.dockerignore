@@ -1,0 +1,8 @@
+node_modules/
+wallet/
+db/*.db
+.env
+.env.*
+*.log
+logs/
+synthetic_users.json

@@ -1,0 +1,19 @@
+# ─── Sanchay Frontend — Local Dev Dockerfile ──────────────────────────────────
+# Vite dev server with hot reload
+# Usage: Built via docker-compose.yml (not standalone)
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies first (cache layer)
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source
+COPY . .
+
+EXPOSE 5173
+
+# Vite dev server — bind to 0.0.0.0 so Docker can route traffic
+CMD ["npx", "vite", "--host", "0.0.0.0"]
